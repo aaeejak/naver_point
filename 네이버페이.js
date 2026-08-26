@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         네이버페이 포인트 자동 받기
 // @namespace    http://adguard.com/
-// @version      3.9.0
+// @version      4.0.0
 // @description  네이버페이 클릭적립 + 보험 클릭미션 + 쇼핑 지원금 + 카페 혜택 + 마이카 클릭미션 자동 수령
 // @author       Feature Planner
 // @match        https://campaign2.naver.com/npay/v2/click-point/*
@@ -19,7 +19,7 @@
     'use strict';
 
     // ── 백그라운드 미션 실행기 (보험 / 마이카 공통) ──
-    async function runBackgroundMissions(selectors, delayMs = 2000) {
+    async function runBackgroundMissions(selectors, delayMs = 2500) {
         let found = false;
         let pollTimeout;
 
@@ -33,21 +33,15 @@
             if (!els.length) { pollTimeout = setTimeout(poll, 500); return; }
 
             found = true;
-            const urls = els.map(el => el.href);
-            console.log(`[NaverPay AP] ${urls.length}개 미션 발견. 클릭 적립 시작...`);
+            console.log(`[NaverPay AP] ${els.length}개 미션 발견. 클릭 적립 시작...`);
 
-            // 숨긴 iframe으로 순차 방문 — 리다이렉트 체인 + 쿠키 유지
+            // 순차 클릭 — 새 탭으로 열어 리다이렉트 체인 + 쿠키 정상 처리
             (async () => {
-                for (const url of urls) {
-                    await new Promise(resolve => {
-                        const iframe = document.createElement('iframe');
-                        iframe.style.cssText = 'width:0;height:0;border:none;position:fixed;top:-9999px';
-                        iframe.src = url;
-                        iframe.onload = () => { setTimeout(() => { iframe.remove(); resolve(); }, 500); };
-                        // onload 실패 대비 타임아웃
-                        setTimeout(() => { iframe.remove(); resolve(); }, 5000);
-                        document.body.appendChild(iframe);
-                    });
+                for (const el of els) {
+                    const origTarget = el.target;
+                    el.target = '_blank';
+                    el.click();
+                    el.target = origTarget;
                     await new Promise(r => setTimeout(r, delayMs));
                 }
                 console.log("[NaverPay AP] 모든 미션 클릭 적립 완료 ✅");
