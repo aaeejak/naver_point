@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         네이버페이 포인트 자동 받기
 // @namespace    http://adguard.com/
-// @version      4.1.0
+// @version      4.2.0
 // @description  네이버페이 클릭적립 + 보험 클릭미션 + 쇼핑 지원금 + 카페 혜택 + 마이카 클릭미션 자동 수령
 // @author       Feature Planner
 // @match        https://campaign2.naver.com/npay/v2/click-point/*
@@ -18,7 +18,7 @@
 (function() {
     'use strict';
 
-    console.log('[NaverPay AP] 스크립트 로드됨 v4.1.0 — ' + window.location.href);
+    console.log('[NaverPay AP] 스크립트 로드됨 v4.2.0 — ' + window.location.href);
 
     // ── 백그라운드 미션 실행기 (보험 / 마이카 공통) ──
     function runBackgroundMissions(selectors, delayMs = 2500) {
@@ -29,6 +29,8 @@
         function poll() {
             if (found) return;
             pollCount++;
+            // lazy-load 대응: 스크롤해서 뷰포트 밖 요소 렌더링 유도
+            window.scrollBy(0, window.innerHeight);
             const els = [];
             for (const sel of selectors) {
                 document.querySelectorAll(sel).forEach(el => el.href && els.push(el));
@@ -38,6 +40,7 @@
             if (!els.length) { pollTimeout = setTimeout(poll, 1000); return; }
 
             found = true;
+            window.scrollTo(0, 0);
             const urls = els.map(el => el.href);
             console.log('[NaverPay AP] 미션 URL:', urls);
 
@@ -128,12 +131,10 @@
             'a[class*="type-click"][class*="PointMission"]'
         ]);
     } else if (host.includes('mycar.naver.com')) {
-        if (path === '/' || path === '' || path === '/index.html') {
-            runBackgroundMissions([
-                'a[data-au="point.item"][data-au-service="mycar"]',
-                'a[href*="ica.pay.naver.com/inventory/r/click/mycar"]'
-            ]);
-        }
+        runBackgroundMissions([
+            'a[data-au="point.item"][data-au-service="mycar"]',
+            'a[href*="ica.pay.naver.com/inventory/r/click/mycar"]'
+        ]);
     } else if (host.includes('campaign2.naver.com')) {
         if (path.includes('/npay/cafe')) runCafeClaimer();
         else runCampaignClaimer();
