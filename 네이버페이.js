@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         네이버페이 포인트 자동 받기
 // @namespace    http://adguard.com/
-// @version      4.2.0
+// @version      4.3.0
 // @description  네이버페이 클릭적립 + 보험 클릭미션 + 쇼핑 지원금 + 카페 혜택 + 마이카 클릭미션 자동 수령
 // @author       Feature Planner
 // @match        https://campaign2.naver.com/npay/v2/click-point/*
@@ -18,7 +18,17 @@
 (function() {
     'use strict';
 
-    console.log('[NaverPay AP] 스크립트 로드됨 v4.2.0 — ' + window.location.href);
+    console.log('[NaverPay AP] 스크립트 로드됨 v4.3.0 — ' + window.location.href);
+
+    // ── 모달/팝업 닫기 + 스크롤 잠금 해제 ──
+    function dismissModals() {
+        // 모달 닫기 버튼 클릭
+        const closeBtn = document.querySelector('button[class*="모달 닫기"], button[aria-label*="닫기"], button[class*="modal_close"], button[class*="close"]');
+        if (closeBtn) { closeBtn.click(); console.log('[NaverPay AP] 모달 닫기 ✅'); }
+        // body/html overflow:hidden 강제 해제 (모달이 스크롤 막는 것 방지)
+        document.body.style.overflow = 'auto';
+        document.documentElement.style.overflow = 'auto';
+    }
 
     // ── 백그라운드 미션 실행기 (보험 / 마이카 공통) ──
     function runBackgroundMissions(selectors, delayMs = 2500) {
@@ -29,8 +39,13 @@
         function poll() {
             if (found) return;
             pollCount++;
-            // lazy-load 대응: 스크롤해서 뷰포트 밖 요소 렌더링 유도
+
+            // 첫 폴링 시 모달 닫기 + 스크롤 잠금 해제
+            if (pollCount <= 3) dismissModals();
+
+            // lazy-load 대응: 페이지 끝까지 점진 스크롤
             window.scrollBy(0, window.innerHeight);
+
             const els = [];
             for (const sel of selectors) {
                 document.querySelectorAll(sel).forEach(el => el.href && els.push(el));
@@ -44,7 +59,6 @@
             const urls = els.map(el => el.href);
             console.log('[NaverPay AP] 미션 URL:', urls);
 
-            // window.open으로 순차 방문 — 가장 확실한 브라우저 네비게이션
             let i = 0;
             function openNext() {
                 if (i >= urls.length) {
