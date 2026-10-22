@@ -1,14 +1,15 @@
 // ==UserScript==
 // @name         네이버페이 포인트 자동 받기
 // @namespace    http://adguard.com/
-// @version      4.3.0
-// @description  네이버페이 클릭적립 + 보험 클릭미션 + 쇼핑 지원금 + 카페 혜택 + 마이카 클릭미션 자동 수령
+// @version      4.4.0
+// @description  네이버페이 클릭적립 + 보험 클릭미션 + 쇼핑 지원금 + 카페 혜택 + 마이카 클릭미션 + 쇼핑 쿠폰 자동 수령
 // @author       Feature Planner
 // @match        https://campaign2.naver.com/npay/v2/click-point/*
 // @match        https://insurance.pay.naver.com/*
 // @match        https://mkt.naver.com/*
 // @match        https://mycar.naver.com/*
 // @match        https://campaign2.naver.com/npay/cafe/*
+// @match        https://shopping.naver.com/*
 // @run-at       document-idle
 // @updateURL    https://raw.githubusercontent.com/aaeejak/naver_point/main/%EB%84%A4%EC%9D%B4%EB%B2%84%ED%8E%98%EC%9D%B4.js
 // @downloadURL  https://raw.githubusercontent.com/aaeejak/naver_point/main/%EB%84%A4%EC%9D%B4%EB%B2%84%ED%8E%98%EC%9D%B4.js
@@ -18,7 +19,7 @@
 (function() {
     'use strict';
 
-    console.log('[NaverPay AP] 스크립트 로드됨 v4.3.0 — ' + window.location.href);
+    console.log('[NaverPay AP] 스크립트 로드됨 v4.4.0 — ' + window.location.href);
 
     // ── 모달/팝업 닫기 + 스크롤 잠금 해제 ──
     function dismissModals() {
@@ -132,6 +133,24 @@
         setTimeout(() => clearInterval(iv), 15000);
     }
 
+    // ── 쇼핑 쿠폰 자동 받기 + 닫기 ──
+    function runShoppingCouponClaimer() {
+        setInterval(() => {
+            const closeBtn = Array.from(document.querySelectorAll('button[class*="_CommonPopupButton-module_button"]')).find(b => b.textContent.trim() === '닫기');
+            if (closeBtn) {
+                closeBtn.click();
+                console.log('[NaverPay AP] 쇼핑 쿠폰 팝업 닫기 ✅');
+                return;
+            }
+            const coupon = document.querySelector('span[class*="CouponElement-module_circle"]:has(path[d^="M1 13.837"]):not([data-ap])');
+            if (coupon) {
+                coupon.dataset.ap = '1';
+                coupon.click();
+                console.log('[NaverPay AP] 쇼핑 쿠폰 받기 클릭 ✅');
+            }
+        }, 500);
+    }
+
     // ── 라우터 ──
     const host = window.location.hostname;
     const path = window.location.pathname;
@@ -154,5 +173,7 @@
         else runCampaignClaimer();
     } else if (host.includes('mkt.naver.com')) {
         runStoreClaimer();
+    } else if (host.includes('shopping.naver.com')) {
+        runShoppingCouponClaimer();
     }
 })();
